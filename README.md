@@ -29,4 +29,10 @@ Or visit directly:
 
 ## Screenshot
 
-![Screenshot](screenshot.png) *(Add your screenshot file to repo)*
+![image](https://github.com/user-attachments/assets/b32047d3-bc39-4fc7-992e-d1224e842a0f)
+![image](https://github.com/user-attachments/assets/533820aa-db23-4031-8c42-c7c94ee1f22f)
+![image](https://github.com/user-attachments/assets/633e522c-0ebd-47d2-932a-2ea223bc56a3)
+
+
+
+
