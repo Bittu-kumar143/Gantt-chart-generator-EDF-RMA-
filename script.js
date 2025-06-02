@@ -198,10 +198,19 @@ function startSimulation() {
     
     if (currentAlgorithm === 'EDF') {
         // EDF logic
-        if (!isEDFSchedulable()) {
-            modalTitle.textContent = 'Schedulability Warning';
+        const utilization = processes.reduce((sum, process) => {
+            return sum + (process.duration / process.period);
+        }, 0);
+        
+        if (utilization > 1) {
+            modalTitle.textContent = 'EDF Schedulability Warning';
             modalTitle.style.color = 'var(--warning-color)';
-            modalMessage.textContent = 'The given inputs are not schedulable under EDF ';
+            modalMessage.innerHTML = `
+                The given inputs are not schedulable under EDF:<br>
+                - Utilization: ${utilization.toFixed(3)} > 1.000 (EDF bound)
+                <br><br>
+                EDF requires the total utilization to be ≤ 1 for schedulability
+            `;
             modal.style.display = 'block';
         } else {
             generateGanttChart();
@@ -234,6 +243,7 @@ function startSimulation() {
         }
     }
 }
+
 
 // Generate Gantt chart after schedulability check
 function generateGanttChart() {
@@ -441,5 +451,7 @@ document.getElementById('backToSelectionBtn').addEventListener('click', () => {
     processSelectionSection.classList.add('active');
     ganttContainer.innerHTML = '';
 });
+
+
 
 
