@@ -17,6 +17,12 @@ const arrivalTimeSlider = document.getElementById('arrivalTime');
 const arrivalValueSpan = document.getElementById('arrivalValue');
 const algorithmTitle = document.getElementById('algorithm-title');
 const ganttContainer = document.getElementById('gantt-container');
+const modal = document.getElementById('schedulabilityModal');
+const modalTitle = document.getElementById('modal-title');
+const modalMessage = document.getElementById('modal-message');
+const proceedBtn = document.getElementById('proceedBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+const closeBtn = document.querySelector('.close-btn');
 
 // Event Listeners
 document.getElementById('edfBtn').addEventListener('click', () => {
@@ -31,6 +37,26 @@ document.getElementById('rmaBtn').addEventListener('click', () => {
 
 document.getElementById('startSimulation').addEventListener('click', startSimulation);
 arrivalTimeSlider.addEventListener('input', updateArrivalTime);
+
+// Modal event listeners
+proceedBtn.addEventListener('click', () => {
+    modal.style.display = 'none';
+    generateGanttChart();
+});
+
+cancelBtn.addEventListener('click', () => {
+    modal.style.display = 'none';
+});
+
+closeBtn.addEventListener('click', () => {
+    modal.style.display = 'none';
+});
+
+window.addEventListener('click', (event) => {
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+});
 
 // Update arrival time display
 function updateArrivalTime() {
@@ -94,6 +120,63 @@ function calculateLCM() {
     return currentLCM;
 }
 
+// Check EDF schedulability (Liu & Layland condition)
+function isEDFSchedulable() {
+    const utilization = processes.reduce((sum, process) => {
+        return sum + (process.duration / process.period);
+    }, 0);
+    
+    return utilization <= 1;
+}
+
+// Check RMA schedulability using both Liu & Layland and Lehoczky's theorem
+function checkRMASchedulability() {
+    const n = processes.length;
+    const utilization = processes.reduce((sum, process) => {
+        return sum + (process.duration / process.period);
+    }, 0);
+    
+    // Liu & Layland bound
+    const liuLaylandBound = n * (Math.pow(2, 1/n) - 1);
+    const passesLiuLayland = utilization <= liuLaylandBound;
+    
+    // Lehoczky's exact test
+    const passesLehoczky = isRMASchedulableLehoczky();
+    
+    return {
+        passesLiuLayland,
+        passesLehoczky,
+        utilization,
+        bound: liuLaylandBound
+    };
+}
+
+// Lehoczky's exact schedulability test for RMA
+function isRMASchedulableLehoczky() {
+    // Sort tasks by period (RM priority order)
+    const sortedProcesses = [...processes].sort((a, b) => a.period - b.period);
+    
+    for (let i = 0; i < sortedProcesses.length; i++) {
+        const process = sortedProcesses[i];
+        let R_prev = 0;
+        let R = process.duration;
+        
+        while (R_prev !== R) {
+            R_prev = R;
+            R = process.duration;
+            
+            for (let j = 0; j < i; j++) {
+                R += Math.ceil(R_prev / sortedProcesses[j].period) * sortedProcesses[j].duration;
+            }
+            
+            if (R > process.period) {
+                return false; // Deadline miss
+            }
+        }
+    }
+    return true;
+}
+
 // Start simulation
 function startSimulation() {
     const numProcesses = parseInt(numProcessesInput.value);
@@ -112,6 +195,49 @@ function startSimulation() {
             color: processColors[i % processColors.length]
         });
     }
+    
+    if (currentAlgorithm === 'EDF') {
+        // EDF logic
+        if (!isEDFSchedulable()) {
+            modalTitle.textContent = 'Schedulability Warning';
+            modalTitle.style.color = 'var(--warning-color)';
+            modalMessage.textContent = 'The given inputs are not schedulable under EDF ';
+            modal.style.display = 'block';
+        } else {
+            generateGanttChart();
+        }
+    } else {
+        // RMA with dual checks
+        const rmaCheck = checkRMASchedulability();
+        
+        if (!rmaCheck.passesLiuLayland) {
+            modalTitle.textContent = 'RMA Schedulability Warning';
+            modalTitle.style.color = 'var(--warning-color)';
+            
+            if (rmaCheck.passesLehoczky) {
+                modalMessage.innerHTML = `
+                    1. The given inputs are not schedulable under RMA (Liu & Layland condition not satisfied).<br><br>
+                    2. However, this task set may still be schedulable according to Lehoczky's theorem.
+                    <br><br>
+                    Utilization: ${rmaCheck.utilization.toFixed(3)} > ${rmaCheck.bound.toFixed(3)} (Liu & Layland bound)
+                `;
+            } else {
+                modalMessage.innerHTML = `
+                    The given inputs are not schedulable under RMA:<br>
+                    - Liu & Layland condition failed (U = ${rmaCheck.utilization.toFixed(3)} > ${rmaCheck.bound.toFixed(3)})<br>
+                    - Lehoczky's test also failed
+                `;
+            }
+            modal.style.display = 'block';
+        } else {
+            generateGanttChart();
+        }
+    }
+}
+
+// Generate Gantt chart after schedulability check
+function generateGanttChart() {
+    const arrivalTime = parseInt(arrivalTimeSlider.value);
     
     // Calculate LCM of periods for the timeline
     lcmPeriod = calculateLCM();
@@ -315,3 +441,5 @@ document.getElementById('backToSelectionBtn').addEventListener('click', () => {
     processSelectionSection.classList.add('active');
     ganttContainer.innerHTML = '';
 });
+
+
