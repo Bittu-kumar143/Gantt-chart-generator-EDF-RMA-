@@ -7,7 +7,7 @@ A real-time scheduler visualization tool for Earliest Deadline First (EDF) and R
 [![Open in Vercel](https://img.shields.io/badge/View_Live_Demo-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://edf-rma-scheduling-simulator.vercel.app/)
 
 Or visit directly:  
-🔗 [https://gantt-chart-generator-edf-rma.vercel.app/](https://edf-rma-scheduling-simulator.vercel.app/)
+🔗 [https://edf-rma-scheduling-simulator.vercel.app/](https://edf-rma-scheduling-simulator.vercel.app/)
 
 ## Features
 
